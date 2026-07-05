@@ -8,6 +8,7 @@ permissions:
 
 env:
   VAULT_ADDR: https://bddc-38-27-115-26.ngrok-free.app
+  VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
 
 jobs:
   deploy:
@@ -20,7 +21,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Fetch Keys from Vault (token)
-        if: ${{ secrets.VAULT_TOKEN != '' }}
+        if: ${{ env.VAULT_TOKEN != '' }}
         uses: hashicorp/vault-action@v3
         with:
           url: ${{ env.VAULT_ADDR }}
@@ -31,7 +32,7 @@ jobs:
             aws/creds/terraform-role secret_key | AWS_SECRET_ACCESS_KEY
 
       - name: Fetch Keys from Vault (OIDC)
-        if: ${{ secrets.VAULT_TOKEN == '' }}
+        if: ${{ env.VAULT_TOKEN == '' }}
         uses: hashicorp/vault-action@v3
         with:
           url: ${{ env.VAULT_ADDR }}
