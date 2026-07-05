@@ -20,6 +20,7 @@ jobs:
         with:
           url: https://bddc-38-27-115-26.ngrok-free.app
           role: gh-actions-role
+          jwtGithubAudience: vault
           method: jwt
           secrets: |
             aws/creds/terraform-role access_key | AWS_ACCESS_KEY_ID ;
