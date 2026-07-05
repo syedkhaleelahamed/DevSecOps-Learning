@@ -1,31 +1,40 @@
-name: Terraform Deployment
-on: [push]
+name: Deploy Infrastructure with Vault and Terraform
 
-permissions:
-  id-token: write
-  contents: read
+on:
+  push:
+    branches: [ "main" ]
 
 jobs:
-  deploy:
+  terraform:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./terraform
+    
+    # Required for OIDC Federation with Vault
+    permissions:
+      id-token: write
+      contents: read
 
     steps:
-      - uses: actions/checkout@v4
+    - name: Checkout Repository
+      uses: actions/checkout@v4
 
-      - name: Fetch Keys from Vault
-        uses: hashicorp/vault-action@v3
-        with:
-          url: https://bddc-38-27-115-26.ngrok-free.app
-          role: gh-actions-role
-          method: jwt
-          secrets: |
-            aws/creds/terraform-role access_key | AWS_ACCESS_KEY_ID ;
-            aws/creds/terraform-role secret_key | AWS_SECRET_ACCESS_KEY
+    # 1. Authenticate with Vault and fetch temporary AWS Credentials
+    - name: Import AWS Secrets From Vault
+      uses: hashicorp/vault-action@v3
+      with:
+        url: ${{ secrets.VAULT_ADDR }}         # Your ngrok URL saved in GitHub Secrets
+        method: jwt
+        role: github-actions-role              # The Vault JWT role we created
+        secrets: |
+          aws/creds/gha-s3-role access_key | AWS_ACCESS_KEY_ID ;
+          aws/creds/gha-s3-role secret_key | AWS_SECRET_ACCESS_KEY
 
-      - uses: hashicorp/setup-terraform@v3
-      - run: terraform init
-      - run: terraform plan
-      - run: terraform apply -auto-approve
+    # 2. Setup Terraform
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+
+    # 3. Execute Infrastructure deployment
+    - name: Terraform Init
+      run: terraform init
+
+    - name: Terraform Apply
+      run: terraform apply -auto-approve
